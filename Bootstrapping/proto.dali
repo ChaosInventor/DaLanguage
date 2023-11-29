@@ -1,0 +1,6 @@
+(input, inputNext, output, outputNext, copy)[exit]
+{
+    loop: inputNext(input)[more: continue, end: exit];
+    continue: copy(input, output);
+    outputNext(output)[more: loop, end: exit];
+}
