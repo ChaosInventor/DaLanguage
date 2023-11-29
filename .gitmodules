@@ -1,0 +1,4 @@
+[submodule "Bootstrapping/C"]
+	path = Bootstrapping/C
+	url = https://github.com/ChaosInventor/DaLanguageCBootstrapper/
+	branch = feature/proto-interpreter
