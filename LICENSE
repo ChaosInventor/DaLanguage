@@ -1,3 +1,15 @@
+Parts of this project are licensed under different terms.
+
+The subdirectories under `Bootstrapping/` each have their own license.
+Only the file `Bootstrapping/proto.dali` is covered by the below
+license.
+
+The `Documentation/` directory is covered by the MIT license. See
+`Documentation/LICENCE`.
+
+All other files and directories, unless explicitly state otherwise, are
+licensed under the below license.
+
 Mozilla Public License Version 2.0
 ==================================
 
