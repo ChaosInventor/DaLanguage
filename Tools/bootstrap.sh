@@ -5,6 +5,7 @@
 set -e
 
 # Bootstrappers are managed as git submodules
+git submodule init
 git submodule update
 
 # Location of the repository root
