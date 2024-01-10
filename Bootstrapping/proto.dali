@@ -1,6 +1,282 @@
-(input, inputNext, output, outputNext, copy)[exit]
+(
+ input, inputNext, output, outputNext, copyChar,
+ data, createList, next, prev, first, last, suffix, prefix, unsuffix, unprefix,
+ extract, destroyList, createPointer, copyPointer, nullPointer, nestedListInsert,
+ nestedListExtract, destroyPointer, ruleLeft, ruleRight, groupType,
+ definitionGroups, groupDefinitions, termType, printTerm,
+ grammar, node, list,
+
+ brk,
+)
+[exit]
 {
-    loop: inputNext(input)[more: continue, end: exit];
-    continue: copy(input, output);
-    outputNext(output)[more: loop, end: exit];
+
+    createPointer(node);
+    append(data, node);
+    copyPointer(grammar, data);
+
+    iterateList(first, next, rulesA, grammar)[exit];
+
+    rulesFull: (
+                addPointer, removePointer, ruleLeft, ruleRight,
+                definitionGroups, groupDefinitions, nestedListExtract,
+                nestedListInsert, groupType, nestedFirst, nestedNext,
+                nullPointer,
+                list, data,
+
+                brk,
+
+                definitionAction, groupAction, termAction, rule,
+               )[next, unreachable]
+               {
+                    nullSentinels: addPointer(data);
+                    addPointer(data);
+
+
+                    Left:
+
+                    addPointer(data);
+                    ruleLeft(rule, data);
+                    nestedFirst(data);
+
+
+                    DefinitionLoop:
+
+                    definitionAction(data);
+
+                    nestedListExtract(data, list);
+                    addPointer(data);
+                    definitionGroups(list, data);
+
+                    nestedFirst(data)[null: cancelG, notNull: GroupLoop];
+
+                    cancelG: removePointer(data);
+
+                    definitionStep: nestedNext(data)[more: DefinitionLoop, end: definitionEnd];
+
+                    definitionEnd: removePointer(data);
+                    nullPointer(data)[null: End, notNull: groupStep];
+
+
+                    GroupLoop:
+
+                    groupAction(data);
+
+                    nestedListExtract(data, list);
+                    groupType(list)[definition: d, term: t];
+
+                    t: termAction(data)[groupStep];
+
+                    d:
+                    nestedListExtract(data, list);
+                    addPointer(data);
+                    groupDefinitions(list, data);
+                    nestedFirst(data)[null: cancelD, notNull: DefinitionLoop];
+
+                    cancelD: removePointer(data);
+
+                    groupStep: nestedNext(data)[more: GroupLoop, end: groupEnd];
+
+                    groupEnd: removePointer(data)[definitionStep];
+
+
+                    End:
+
+                    removePointer(data);
+                    nullPointer(data)[null: Right, notNull: Finish];
+
+
+                    Right:
+
+                    addPointer(data);
+                    ruleRight(rule, data);
+                    nestedFirst(data)[DefinitionLoop];
+
+
+                    Finish: removePointer(data);
+               }
+    rules: rulesFull
+           (
+            addPointer, removePointer, ruleLeft, ruleRight,
+            definitionGroups, groupDefinitions, nestedListExtract,
+            nestedListInsert, groupType, nestedFirst, nestedNext,
+            nullPointer,
+            list, data,
+
+            brk,
+           );
+    rulesA: rules(noop, noop, nestedPrintTerminal);
+    printTerminalFull: (
+                        printTerm, termType,
+
+                        brk,
+
+                        groupTerm
+                       )[next]
+                       {
+                            termType(groupTerm)[terminal: p, nonterminal: next];
+                            p: printTerm(groupTerm);
+                       }
+    printTerminal: printTerminalFull(printTerm, termType, brk);
+
+    appendFull: (
+                  suffix, next,
+
+                  dList, node
+                )
+                [cont]
+                {
+                    suffix(dList, node)[null: cont, notNull: shift];
+                    shift: next(dList);
+                }
+    append: appendFull(suffix: suffix, next: next);
+    addPointerFull: (
+                     createPointer, append, node,
+
+                     dList,
+                    )
+                    {
+                        createPointer(node);
+                        append(dList, node);
+                    }
+    addPointer: addPointerFull(createPointer, append, node);
+
+    abateFull: (
+                unsuffix, prev,
+
+                dList, node
+               )
+               {
+                    prev(dList);
+                    unsuffix(dList, node);
+               }
+    abate: abateFull(unsuffix, prev);
+    removePointerFull: (
+                        destroyPointer, abate, node,
+
+                        dList
+                       )
+                       {
+                            abate(dList, node);
+                            destroyPointer(node);
+                       }
+    removePointer: removePointerFull(destroyPointer, abate, node);
+
+    nullFull: (
+               next, last,
+
+               dList
+              )
+              {
+                  last(dList);
+                  next(dList);
+              }
+    null: nullFull(next: next, last: last);
+    noopFull: (
+               next, prev, last,
+
+               dList
+              )
+              [cont]
+              {
+                  next(dList)[more: p, end: l];
+                  p: prev(dList)[cont];
+                  l: last(dList)[cont];
+              }
+    noop: noopFull(next, prev, last);
+
+
+    iterateList: (start, step, action, list)
+                 [null, notNull, ended]
+                 {
+                     start(list)[null: null, notNull: loop];
+
+                     loop: action(list)[stp, ended];
+                     stp: step(list)[more: loop, end: notNull];
+                 }
+
+    nestedListFull: (
+                     nestedListInsert, nestedListExtract, list,
+
+                     dList, to
+                    )
+                    {
+                        nestedListExtract(dList, list);
+                        to(list);
+                        nestedListInsert(dList, list);
+                    }
+    nestedList: nestedListFull(nestedListInsert, nestedListExtract, list);
+    nestedListInsertOnlyFull:
+                    (
+                     nestedListInsert, list,
+
+                     dList, to
+                    )
+                    {
+                        to(list);
+                        nestedListInsert(dList, list);
+                    }
+    nestedListInsertOnly: nestedListInsertOnlyFull(nestedListInsert, list);
+
+    nestedNextFull: (
+                     nestedListInsert, nestedListExtract, next, list,
+
+                     dList
+                    )
+                    [more, end]
+                    {
+                        nestedListExtract(dList, list);
+                        next(list)[m, e];
+
+                        m: nestedListInsert(dList, list)[more];
+                        e: nestedListInsert(dList, list)[end];
+                    }
+    nestedNext: nestedNextFull(nestedListInsert, nestedListExtract, next, list);
+    nestedFirstFull: (
+                      nestedListInsert, nestedListExtract, first, list,
+
+                      dList
+                     )
+                     [null, notNull]
+                     {
+                         nestedListExtract(dList, list);
+                         first(list)[null: nu, notNull: no];
+
+                         nu: nestedListInsert(dList, list)[null];
+                         no: nestedListInsert(dList, list)[notNull];
+                     }
+    nestedFirst: nestedFirstFull(nestedListInsert, nestedListExtract, first, list);
+
+    groupDefinitionsD: groupDefinitions(data);
+    definitionGroupsD: definitionGroups(data);
+    nestedDefinitionGroups: nestedListInsertOnly(to: definitionGroupsD);
+    nestedGroupDefinitions: nestedList(to: groupDefinitionsD);
+    nestedGroupTypeFull: (
+                          nestedListInsert, nestedListExtract, groupType, list, brk,
+
+                          dList
+                         )[term, definition]
+                         {
+                             nestedListExtract(dList, list);
+                             groupType(list)[term: t, definition: d];
+
+                             t: nestedListInsert(dList, list)[term];
+                             d: nestedListInsert(dList, list)[definition];
+                         }
+    nestedGroupType: nestedGroupTypeFull(nestedListInsert, nestedListExtract, groupType, list, brk);
+    nestedTermTypeFull: (
+                          nestedListInsert, nestedListExtract, termType, list,
+
+                          dList
+                         )[terminal, nonterminal]
+                         {
+                             nestedListExtract(dList, list);
+                             termType(list)[terminal: t, nonterminal: n];
+
+                             t: nestedListInsert(dList, list)[terminal];
+                             n: nestedListInsert(dList, list)[nonterminal];
+                         }
+    nestedTermType: nestedTermTypeFull(nestedListInsert, nestedListExtract, termType, list);
+    nestedPrintTerminal: nestedList(to: printTerminal);
+
 }
